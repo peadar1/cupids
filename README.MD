@@ -12,7 +12,7 @@ A web application for managing college cupids matching events.
 
 ## Tech Stack
 - **Backend:** Python, FastAPI, SQLAlchemy, SQLite
-- **Frontend:** React (coming soon)
+- **Frontend:** React, TailwindCSS
 
 ## Project Status
 🚧 Currently in development - Phase 1 (MVP)
