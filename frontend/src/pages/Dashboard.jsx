@@ -1,8 +1,10 @@
-import { useAuth } from '../context/AuthContext';
-import { Heart, LogOut, Calendar, Users, Sparkles } from 'lucide-react';
+import { useAuth } from "../context/AuthContext";
+import { Heart, LogOut, Calendar, Users, Sparkles } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-red-50 to-orange-50">
@@ -10,11 +12,28 @@ export default function Dashboard() {
       <header className="bg-white border-b-2 border-pink-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Heart className="text-pink-500" size={32} fill="currentColor" />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
-                Cupid's Matcher
-              </h1>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
+                <Heart className="text-pink-500" size={32} fill="currentColor" />
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
+                  Cupid's Matcher
+                </h1>
+              </div>
+              
+              <nav className="flex gap-4">
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="text-pink-600 font-semibold border-b-2 border-pink-600"
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => navigate('/events')}
+                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                >
+                  Events
+                </button>
+              </nav>
             </div>
             
             <div className="flex items-center gap-4">
@@ -43,11 +62,15 @@ export default function Dashboard() {
               <Sparkles className="text-white" size={32} />
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-gray-800">Welcome, {user?.name}! 👋</h2>
-              <p className="text-gray-600 mt-1">Ready to create some magical matches?</p>
+              <h2 className="text-3xl font-bold text-gray-800">
+                Welcome, {user?.name}! 👋
+              </h2>
+              <p className="text-gray-600 mt-1">
+                Ready to create some magical matches?
+              </p>
             </div>
           </div>
-          
+
           <div className="bg-gradient-to-r from-pink-50 to-red-50 rounded-2xl p-6 border-2 border-pink-200">
             <p className="text-gray-700 text-lg">
               🎉 You're all set! Your matcher account is active and ready to go.
@@ -57,7 +80,10 @@ export default function Dashboard() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-purple-100 hover:shadow-xl transition-shadow animate-slideUp" style={{animationDelay: '0.1s'}}>
+          <div
+            className="bg-white rounded-2xl shadow-lg p-6 border-2 border-purple-100 hover:shadow-xl transition-shadow animate-slideUp"
+            style={{ animationDelay: "0.1s" }}
+          >
             <div className="flex items-center gap-4">
               <div className="bg-purple-100 p-3 rounded-xl">
                 <Calendar className="text-purple-600" size={28} />
@@ -69,7 +95,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-blue-100 hover:shadow-xl transition-shadow animate-slideUp" style={{animationDelay: '0.2s'}}>
+          <div
+            className="bg-white rounded-2xl shadow-lg p-6 border-2 border-blue-100 hover:shadow-xl transition-shadow animate-slideUp"
+            style={{ animationDelay: "0.2s" }}
+          >
             <div className="flex items-center gap-4">
               <div className="bg-blue-100 p-3 rounded-xl">
                 <Users className="text-blue-600" size={28} />
@@ -81,10 +110,17 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-pink-100 hover:shadow-xl transition-shadow animate-slideUp" style={{animationDelay: '0.3s'}}>
+          <div
+            className="bg-white rounded-2xl shadow-lg p-6 border-2 border-pink-100 hover:shadow-xl transition-shadow animate-slideUp"
+            style={{ animationDelay: "0.3s" }}
+          >
             <div className="flex items-center gap-4">
               <div className="bg-pink-100 p-3 rounded-xl">
-                <Heart className="text-pink-600" size={28} fill="currentColor" />
+                <Heart
+                  className="text-pink-600"
+                  size={28}
+                  fill="currentColor"
+                />
               </div>
               <div>
                 <p className="text-gray-500 text-sm">Matches Made</p>
@@ -95,8 +131,13 @@ export default function Dashboard() {
         </div>
 
         {/* Coming Soon Section */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 border-2 border-pink-100 animate-slideUp" style={{animationDelay: '0.4s'}}>
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">🚀 Coming Soon</h3>
+        <div
+          className="bg-white rounded-3xl shadow-xl p-8 border-2 border-pink-100 animate-slideUp"
+          style={{ animationDelay: "0.4s" }}
+        >
+          <h3 className="text-2xl font-bold text-gray-800 mb-4">
+            🚀 Coming Soon
+          </h3>
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-gray-700">
               <div className="w-2 h-2 bg-pink-500 rounded-full"></div>

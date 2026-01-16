@@ -25,5 +25,14 @@ export const authAPI = {
   login: (data) => api.post('/api/auth/login', data),
 };
 
+// Event API calls
+export const eventAPI = {
+  getAll: () => api.get('/api/events'),
+  getById: (id) => api.get(`/api/events/${id}`),
+  create: (data) => api.post('/api/events', data),
+  update: (id, data) => api.put(`/api/events/${id}`, data),
+  delete: (id) => api.delete(`/api/events/${id}`),
+};
+
 // Export the axios instance for direct use if needed
 export default api;

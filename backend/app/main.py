@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from . import models
-from .routers import auth
+from .routers import auth, events  
 
 # Create all database tables
 Base.metadata.create_all(bind=engine)
@@ -14,10 +14,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware (allows frontend to call API)
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Change to specific origins in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -25,6 +25,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)
+app.include_router(events.router)  
 
 @app.get("/")
 def read_root():
