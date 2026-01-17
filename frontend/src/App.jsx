@@ -6,6 +6,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Events from './pages/Events';
 import CreateEvent from './pages/CreateEvent';
+import EventDetail from './pages/EventDetail';  
 
 function App() {
   return (
@@ -40,6 +41,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <CreateEvent />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Add this new route */}
+          <Route 
+            path="/events/:id" 
+            element={
+              <ProtectedRoute>
+                <EventDetail />
               </ProtectedRoute>
             } 
           />

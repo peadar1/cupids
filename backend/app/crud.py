@@ -91,11 +91,48 @@ def update_event(db: Session, event_id: int, event_update: schemas.EventUpdate) 
     return db_event
 
 def delete_event(db: Session, event_id: int) -> bool:
-    """Delete an event."""
+    """Delete an event and all related data."""
     db_event = get_event_by_id(db, event_id)
     if not db_event:
         return False
     
+    
+    # Delete matching weights
+    db.query(models.MatchingWeight).filter(
+        models.MatchingWeight.event_id == event_id
+    ).delete(synchronize_session=False)
+    
+    # Delete event_matchers
+    db.query(models.EventMatcher).filter(
+        models.EventMatcher.event_id == event_id
+    ).delete(synchronize_session=False)
+    
+    # Delete form questions
+    db.query(models.FormQuestion).filter(
+        models.FormQuestion.event_id == event_id
+    ).delete(synchronize_session=False)
+    
+    # Delete venues
+    db.query(models.Venue).filter(
+        models.Venue.event_id == event_id
+    ).delete(synchronize_session=False)
+    
+    # Delete exclusions
+    db.query(models.Exclusion).filter(
+        models.Exclusion.event_id == event_id
+    ).delete(synchronize_session=False)
+    
+    # Delete matches
+    db.query(models.Match).filter(
+        models.Match.event_id == event_id
+    ).delete(synchronize_session=False)
+    
+    # Delete participants
+    db.query(models.Participant).filter(
+        models.Participant.event_id == event_id
+    ).delete(synchronize_session=False)
+    
+    # Finally delete the event itself
     db.delete(db_event)
     db.commit()
     return True

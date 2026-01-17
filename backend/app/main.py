@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from . import models
-from .routers import auth, events  
+from .routers import auth, events
 
 # Create all database tables
 Base.metadata.create_all(bind=engine)
@@ -14,10 +14,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware
+# CORS middleware - THIS MUST BE HERE!
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Add both
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -25,7 +25,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)
-app.include_router(events.router)  
+app.include_router(events.router)
 
 @app.get("/")
 def read_root():
