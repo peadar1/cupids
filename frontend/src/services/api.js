@@ -34,5 +34,14 @@ export const eventAPI = {
   delete: (id) => api.delete(`/api/events/${id}`),
 };
 
+// Venue API calls
+export const venueAPI = {
+  getAll: (eventId) => api.get(`/api/events/${eventId}/venues`),
+  getById: (eventId, venueId) => api.get(`/api/events/${eventId}/venues/${venueId}`),
+  create: (eventId, data) => api.post(`/api/events/${eventId}/venues`, data),
+  update: (eventId, venueId, data) => api.put(`/api/events/${eventId}/venues/${venueId}`, data),
+  delete: (eventId, venueId) => api.delete(`/api/events/${eventId}/venues/${venueId}`),
+};
+
 // Export the axios instance for direct use if needed
 export default api;

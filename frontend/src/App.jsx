@@ -6,7 +6,8 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Events from './pages/Events';
 import CreateEvent from './pages/CreateEvent';
-import EventDetail from './pages/EventDetail';  
+import EventDetail from './pages/EventDetail';
+import Venues from './pages/Venues';  // Add this import
 
 function App() {
   return (
@@ -45,12 +46,21 @@ function App() {
             } 
           />
           
-          {/* Add this new route */}
           <Route 
             path="/events/:id" 
             element={
               <ProtectedRoute>
                 <EventDetail />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Add this new route */}
+          <Route 
+            path="/events/:eventId/venues" 
+            element={
+              <ProtectedRoute>
+                <Venues />
               </ProtectedRoute>
             } 
           />

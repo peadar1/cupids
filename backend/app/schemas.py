@@ -61,3 +61,32 @@ class EventListResponse(BaseModel):
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
+
+# ==================== VENUE SCHEMAS ====================
+
+class VenueBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    address: Optional[str] = None
+    total_capacity: int = Field(..., gt=0)
+    min_age: int = Field(..., ge=18, le=21)  # Must be 18 or 21
+
+class VenueCreate(VenueBase):
+    pass
+
+class VenueUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    address: Optional[str] = None
+    total_capacity: Optional[int] = Field(None, gt=0)
+    available_slots: Optional[int] = Field(None, ge=0)
+    min_age: Optional[int] = Field(None, ge=18, le=21)
+    is_active: Optional[bool] = None
+
+class VenueResponse(VenueBase):
+    id: int
+    event_id: int
+    available_slots: int
+    is_active: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)

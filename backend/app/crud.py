@@ -136,3 +136,56 @@ def delete_event(db: Session, event_id: int) -> bool:
     db.delete(db_event)
     db.commit()
     return True
+
+# ==================== VENUE CRUD ====================
+
+def get_venue_by_id(db: Session, venue_id: int) -> Optional[models.Venue]:
+    """Get a venue by ID."""
+    return db.query(models.Venue).filter(models.Venue.id == venue_id).first()
+
+def get_event_venues(db: Session, event_id: int) -> list[models.Venue]:
+    """Get all venues for an event."""
+    return db.query(models.Venue).filter(
+        models.Venue.event_id == event_id,
+        models.Venue.is_active == True
+    ).all()
+
+def create_venue(db: Session, venue: schemas.VenueCreate, event_id: int) -> models.Venue:
+    """Create a new venue for an event."""
+    db_venue = models.Venue(
+        event_id=event_id,
+        name=venue.name,
+        address=venue.address,
+        total_capacity=venue.total_capacity,
+        available_slots=venue.total_capacity,  # Initially all slots available
+        min_age=venue.min_age,
+        is_active=True
+    )
+    db.add(db_venue)
+    db.commit()
+    db.refresh(db_venue)
+    return db_venue
+
+def update_venue(db: Session, venue_id: int, venue_update: schemas.VenueUpdate) -> Optional[models.Venue]:
+    """Update a venue."""
+    db_venue = get_venue_by_id(db, venue_id)
+    if not db_venue:
+        return None
+    
+    update_data = venue_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_venue, field, value)
+    
+    db.commit()
+    db.refresh(db_venue)
+    return db_venue
+
+def delete_venue(db: Session, venue_id: int) -> bool:
+    """Soft delete a venue (set is_active to False)."""
+    db_venue = get_venue_by_id(db, venue_id)
+    if not db_venue:
+        return False
+    
+    db_venue.is_active = False
+    db.commit()
+    return True

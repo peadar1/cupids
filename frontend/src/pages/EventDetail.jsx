@@ -1,37 +1,38 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { eventAPI } from '../services/api';
-import { 
-  Heart, 
-  LogOut, 
-  ArrowLeft, 
-  Calendar, 
-  Edit2, 
-  Users, 
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { eventAPI, venueAPI } from "../services/api";
+import {
+  Heart,
+  LogOut,
+  ArrowLeft,
+  Calendar,
+  Edit2,
+  Users,
   FileText,
   MapPin,
   Settings,
   Trash2,
   Save,
-  X
-} from 'lucide-react';
+  X,
+} from "lucide-react";
 
 export default function EventDetail() {
   const { id } = useParams();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  
+  const [venueCount, setVenueCount] = useState(0);
+
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
-  
+
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    event_date: '',
-    status: 'setup',
+    name: "",
+    description: "",
+    event_date: "",
+    status: "setup",
   });
 
   useEffect(() => {
@@ -40,17 +41,22 @@ export default function EventDetail() {
 
   const fetchEvent = async () => {
     try {
-      const response = await eventAPI.getById(id);
-      setEvent(response.data);
+      const [eventRes, venuesRes] = await Promise.all([
+        eventAPI.getById(id),
+        venueAPI.getAll(id),
+      ]);
+
+      setEvent(eventRes.data);
       setFormData({
-        name: response.data.name,
-        description: response.data.description || '',
-        event_date: response.data.event_date,
-        status: response.data.status,
+        name: eventRes.data.name,
+        description: eventRes.data.description || "",
+        event_date: eventRes.data.event_date,
+        status: eventRes.data.status,
       });
+      setVenueCount(venuesRes.data.length);
       setLoading(false);
     } catch (err) {
-      setError('Failed to load event');
+      setError("Failed to load event");
       setLoading(false);
     }
   };
@@ -68,41 +74,45 @@ export default function EventDetail() {
       setEditing(false);
       fetchEvent();
     } catch (err) {
-      setError('Failed to update event');
+      setError("Failed to update event");
     }
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this event? This cannot be undone.')) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this event? This cannot be undone.",
+      )
+    ) {
       try {
         await eventAPI.delete(id);
-        navigate('/events');
+        navigate("/events");
       } catch (err) {
-        setError('Failed to delete event');
+        setError("Failed to delete event");
       }
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'setup':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'registration_open':
-        return 'bg-green-100 text-green-700 border-green-200';
-      case 'matching_in_progress':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'completed':
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+      case "setup":
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      case "registration_open":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "matching_in_progress":
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      case "completed":
+        return "bg-gray-100 text-gray-700 border-gray-200";
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -125,7 +135,7 @@ export default function EventDetail() {
             {error}
           </div>
           <button
-            onClick={() => navigate('/events')}
+            onClick={() => navigate("/events")}
             className="text-pink-600 hover:text-pink-700 font-semibold"
           >
             ← Back to Events
@@ -142,29 +152,36 @@ export default function EventDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                <Heart className="text-pink-500" size={32} fill="currentColor" />
+              <div
+                className="flex items-center gap-3 cursor-pointer"
+                onClick={() => navigate("/dashboard")}
+              >
+                <Heart
+                  className="text-pink-500"
+                  size={32}
+                  fill="currentColor"
+                />
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
                   Cupid's Matcher
                 </h1>
               </div>
-              
+
               <nav className="flex gap-4">
                 <button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => navigate("/dashboard")}
                   className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
                 >
                   Dashboard
                 </button>
                 <button
-                  onClick={() => navigate('/events')}
+                  onClick={() => navigate("/events")}
                   className="text-pink-600 font-semibold"
                 >
                   Events
                 </button>
               </nav>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-sm text-gray-500">Welcome back,</p>
@@ -186,7 +203,7 @@ export default function EventDetail() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Back Button */}
         <button
-          onClick={() => navigate('/events')}
+          onClick={() => navigate("/events")}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 font-medium transition-colors"
         >
           <ArrowLeft size={20} />
@@ -212,9 +229,11 @@ export default function EventDetail() {
                   className="text-4xl font-bold text-gray-800 mb-4 w-full border-2 border-pink-200 rounded-xl px-4 py-2 focus:border-pink-400 focus:ring-4 focus:ring-pink-100 outline-none"
                 />
               ) : (
-                <h2 className="text-4xl font-bold text-gray-800 mb-4">{event?.name}</h2>
+                <h2 className="text-4xl font-bold text-gray-800 mb-4">
+                  {event?.name}
+                </h2>
               )}
-              
+
               <div className="flex items-center gap-4 flex-wrap">
                 {editing ? (
                   <select
@@ -225,15 +244,19 @@ export default function EventDetail() {
                   >
                     <option value="setup">Setup</option>
                     <option value="registration_open">Registration Open</option>
-                    <option value="matching_in_progress">Matching In Progress</option>
+                    <option value="matching_in_progress">
+                      Matching In Progress
+                    </option>
                     <option value="completed">Completed</option>
                   </select>
                 ) : (
-                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border-2 ${getStatusColor(event?.status)}`}>
-                    {event?.status.replace('_', ' ').toUpperCase()}
+                  <span
+                    className={`px-4 py-2 rounded-full text-sm font-semibold border-2 ${getStatusColor(event?.status)}`}
+                  >
+                    {event?.status.replace("_", " ").toUpperCase()}
                   </span>
                 )}
-                
+
                 <div className="flex items-center gap-2 text-gray-600">
                   <Calendar size={18} className="text-pink-500" />
                   {editing ? (
@@ -245,7 +268,9 @@ export default function EventDetail() {
                       className="border-2 border-pink-200 rounded-lg px-3 py-1 focus:border-pink-400 focus:ring-4 focus:ring-pink-100 outline-none"
                     />
                   ) : (
-                    <span className="font-medium">{formatDate(event?.event_date)}</span>
+                    <span className="font-medium">
+                      {formatDate(event?.event_date)}
+                    </span>
                   )}
                 </div>
               </div>
@@ -261,7 +286,7 @@ export default function EventDetail() {
                 />
               ) : (
                 <p className="text-gray-600 mt-4">
-                  {event?.description || 'No description provided.'}
+                  {event?.description || "No description provided."}
                 </p>
               )}
             </div>
@@ -281,7 +306,7 @@ export default function EventDetail() {
                       setEditing(false);
                       setFormData({
                         name: event.name,
-                        description: event.description || '',
+                        description: event.description || "",
                         event_date: event.event_date,
                         status: event.status,
                       });
@@ -331,7 +356,11 @@ export default function EventDetail() {
           <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-pink-100">
             <div className="flex items-center gap-4">
               <div className="bg-pink-100 p-3 rounded-xl">
-                <Heart className="text-pink-600" size={28} fill="currentColor" />
+                <Heart
+                  className="text-pink-600"
+                  size={28}
+                  fill="currentColor"
+                />
               </div>
               <div>
                 <p className="text-gray-500 text-sm">Matches Made</p>
@@ -346,39 +375,57 @@ export default function EventDetail() {
                 <MapPin className="text-purple-600" size={28} />
               </div>
               <div>
-                <p className="text-gray-500 text-sm">Venues</p>
-                <p className="text-3xl font-bold text-gray-800">0</p>
-              </div>
+                <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-purple-100">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-purple-100 p-3 rounded-xl">
+                      <MapPin className="text-purple-600" size={28} />
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-sm">Venues</p>
+                      <p className="text-3xl font-bold text-gray-800">
+                        {venueCount}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>{" "}
+              {/* Close Stats Grid here! */}
+              {/* Action Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+              <span className="text-pink-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </span>
             </div>
-          </div>
-        </div>
-
-        {/* Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Form Configuration */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-pink-100 hover:shadow-xl transition-shadow cursor-pointer group">
-            <div className="flex items-start justify-between mb-4">
-              <div className="bg-gradient-to-br from-pink-400 to-red-400 p-4 rounded-2xl">
-                <FileText className="text-white" size={32} />
-              </div>
-              <span className="text-pink-600 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">Registration Form</h3>
-            <p className="text-gray-600 mb-4">Configure custom questions for participant signups</p>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">
+              Registration Form
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Configure custom questions for participant signups
+            </p>
             <div className="text-sm text-gray-500">Coming soon</div>
           </div>
 
           {/* Venue Management */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-purple-100 hover:shadow-xl transition-shadow cursor-pointer group">
+          <div
+            onClick={() => navigate(`/events/${id}/venues`)}
+            className="bg-white rounded-2xl shadow-lg p-8 border-2 border-purple-100 hover:shadow-xl transition-shadow cursor-pointer group"
+          >
             <div className="flex items-start justify-between mb-4">
               <div className="bg-gradient-to-br from-purple-400 to-indigo-400 p-4 rounded-2xl">
                 <MapPin className="text-white" size={32} />
               </div>
-              <span className="text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+              <span className="text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </span>
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-2">Venues</h3>
-            <p className="text-gray-600 mb-4">Add and manage pubs and date locations</p>
-            <div className="text-sm text-gray-500">Coming soon</div>
+            <p className="text-gray-600 mb-4">
+              Add and manage pubs and date locations
+            </p>
+            <div className="text-sm font-semibold text-purple-600">
+              {/* You can add venue count here later */}
+              Click to manage
+            </div>
           </div>
 
           {/* Matching Settings */}
@@ -387,10 +434,16 @@ export default function EventDetail() {
               <div className="bg-gradient-to-br from-blue-400 to-cyan-400 p-4 rounded-2xl">
                 <Settings className="text-white" size={32} />
               </div>
-              <span className="text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+              <span className="text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">Matching Settings</h3>
-            <p className="text-gray-600 mb-4">Configure compatibility scoring weights</p>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">
+              Matching Settings
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Configure compatibility scoring weights
+            </p>
             <div className="text-sm text-gray-500">Coming soon</div>
           </div>
 
@@ -400,9 +453,13 @@ export default function EventDetail() {
               <div className="bg-gradient-to-br from-green-400 to-emerald-400 p-4 rounded-2xl">
                 <Users className="text-white" size={32} />
               </div>
-              <span className="text-green-600 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+              <span className="text-green-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">Participants</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">
+              Participants
+            </h3>
             <p className="text-gray-600 mb-4">View and manage event signups</p>
             <div className="text-sm text-gray-500">Coming soon</div>
           </div>
