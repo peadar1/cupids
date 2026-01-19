@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { eventAPI } from '../services/api';
-import { 
-  Heart, 
-  LogOut, 
-  ArrowLeft, 
-  Calendar, 
-  Edit2, 
-  Users, 
+import { eventAPI, participantAPI } from '../services/api';
+import {
+  Heart,
+  LogOut,
+  ArrowLeft,
+  Calendar,
+  Edit2,
+  Users,
   FileText,
   MapPin,
-  Settings,
   Trash2,
   Save,
-  X
+  X,
+  Link,
+  Copy,
+  Check,
+  ExternalLink
 } from 'lucide-react';
 
 export default function EventDetail() {
@@ -26,6 +29,8 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [participantCount, setParticipantCount] = useState(0);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -34,19 +39,26 @@ export default function EventDetail() {
     status: 'setup',
   });
 
+  // Generate registration link
+  const registrationLink = `${window.location.origin}/events/${id}/register`;
+
   useEffect(() => {
     fetchEvent();
   }, [id]);
 
   const fetchEvent = async () => {
     try {
-      const response = await eventAPI.getById(id);
-      setEvent(response.data);
+      const [eventResponse, participantsResponse] = await Promise.all([
+        eventAPI.getById(id),
+        participantAPI.getAll(id).catch(() => ({ data: [] }))
+      ]);
+      setEvent(eventResponse.data);
+      setParticipantCount(participantsResponse.data.length);
       setFormData({
-        name: response.data.name,
-        description: response.data.description || '',
-        event_date: response.data.event_date,
-        status: response.data.status,
+        name: eventResponse.data.name,
+        description: eventResponse.data.description || '',
+        event_date: eventResponse.data.event_date,
+        status: eventResponse.data.status,
       });
       setLoading(false);
     } catch (err) {
@@ -80,6 +92,24 @@ export default function EventDetail() {
       } catch (err) {
         setError('Failed to delete event');
       }
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(registrationLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = registrationLink;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -201,7 +231,7 @@ export default function EventDetail() {
 
         {/* Event Header Card */}
         <div className="bg-white rounded-3xl shadow-xl p-8 mb-6 border-2 border-pink-100">
-          <div className="flex items-start justify-between mb-6">
+          <div className="flex items-start justify-between">
             <div className="flex-1">
               {editing ? (
                 <input
@@ -314,6 +344,62 @@ export default function EventDetail() {
           </div>
         </div>
 
+        {/* Registration Link Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border-2 border-green-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-green-100 p-2 rounded-lg">
+              <Link className="text-green-600" size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-800">Registration Link</h3>
+              <p className="text-sm text-gray-500">Share this link with participants to register</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="flex-1 bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 font-mono text-sm text-gray-700 overflow-x-auto">
+              {registrationLink}
+            </div>
+            
+            <button
+              onClick={handleCopyLink}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all ${
+                copied 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
+            >
+              {copied ? (
+                <>
+                  <Check size={18} />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy size={18} />
+                  Copy
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={() => window.open(registrationLink, '_blank')}
+              className="flex items-center gap-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
+            >
+              <ExternalLink size={18} />
+              Preview
+            </button>
+          </div>
+          
+          {event?.status !== 'registration_open' && (
+            <div className="mt-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl px-4 py-3">
+              <p className="text-sm text-yellow-800">
+                ⚠️ <strong>Note:</strong> Registration is currently closed. Change the event status to "Registration Open" to allow participants to register.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-blue-100">
@@ -323,7 +409,7 @@ export default function EventDetail() {
               </div>
               <div>
                 <p className="text-gray-500 text-sm">Participants</p>
-                <p className="text-3xl font-bold text-gray-800">0</p>
+                <p className="text-3xl font-bold text-gray-800">{participantCount}</p>
               </div>
             </div>
           </div>
@@ -355,8 +441,11 @@ export default function EventDetail() {
 
         {/* Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Form Configuration */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-pink-100 hover:shadow-xl transition-shadow cursor-pointer group">
+          {/* Form Configuration - NOW CLICKABLE */}
+          <div 
+            onClick={() => navigate(`/events/${id}/form`)}
+            className="bg-white rounded-2xl shadow-lg p-8 border-2 border-pink-100 hover:shadow-xl transition-shadow cursor-pointer group"
+          >
             <div className="flex items-start justify-between mb-4">
               <div className="bg-gradient-to-br from-pink-400 to-red-400 p-4 rounded-2xl">
                 <FileText className="text-white" size={32} />
@@ -365,11 +454,14 @@ export default function EventDetail() {
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-2">Registration Form</h3>
             <p className="text-gray-600 mb-4">Configure custom questions for participant signups</p>
-            <div className="text-sm text-gray-500">Coming soon</div>
+            <div className="text-sm text-pink-600 font-medium">Customize form →</div>
           </div>
 
-          {/* Venue Management */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-purple-100 hover:shadow-xl transition-shadow cursor-pointer group">
+          {/* Venue Management - CLICKABLE */}
+          <div 
+            onClick={() => navigate(`/events/${id}/venues`)}
+            className="bg-white rounded-2xl shadow-lg p-8 border-2 border-purple-100 hover:shadow-xl transition-shadow cursor-pointer group"
+          >
             <div className="flex items-start justify-between mb-4">
               <div className="bg-gradient-to-br from-purple-400 to-indigo-400 p-4 rounded-2xl">
                 <MapPin className="text-white" size={32} />
@@ -378,24 +470,30 @@ export default function EventDetail() {
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-2">Venues</h3>
             <p className="text-gray-600 mb-4">Add and manage pubs and date locations</p>
-            <div className="text-sm text-gray-500">Coming soon</div>
+            <div className="text-sm text-purple-600 font-medium">Manage venues →</div>
           </div>
 
-          {/* Matching Settings */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-blue-100 hover:shadow-xl transition-shadow cursor-pointer group">
+          {/* Matches */}
+          <div
+            onClick={() => navigate(`/events/${id}/matches`)}
+            className="bg-white rounded-2xl shadow-lg p-8 border-2 border-blue-100 hover:shadow-xl transition-shadow cursor-pointer group"
+          >
             <div className="flex items-start justify-between mb-4">
               <div className="bg-gradient-to-br from-blue-400 to-cyan-400 p-4 rounded-2xl">
-                <Settings className="text-white" size={32} />
+                <Heart className="text-white" size={32} fill="currentColor" />
               </div>
               <span className="text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">Matching Settings</h3>
-            <p className="text-gray-600 mb-4">Configure compatibility scoring weights</p>
-            <div className="text-sm text-gray-500">Coming soon</div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">Matches</h3>
+            <p className="text-gray-600 mb-4">Create and manage participant matches</p>
+            <div className="text-sm text-blue-600 font-medium">Manage matches →</div>
           </div>
 
           {/* Participants */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-green-100 hover:shadow-xl transition-shadow cursor-pointer group">
+          <div
+            onClick={() => navigate(`/events/${id}/participants`)}
+            className="bg-white rounded-2xl shadow-lg p-8 border-2 border-green-100 hover:shadow-xl transition-shadow cursor-pointer group"
+          >
             <div className="flex items-start justify-between mb-4">
               <div className="bg-gradient-to-br from-green-400 to-emerald-400 p-4 rounded-2xl">
                 <Users className="text-white" size={32} />
@@ -404,7 +502,7 @@ export default function EventDetail() {
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-2">Participants</h3>
             <p className="text-gray-600 mb-4">View and manage event signups</p>
-            <div className="text-sm text-gray-500">Coming soon</div>
+            <div className="text-sm text-green-600 font-medium">View participants →</div>
           </div>
         </div>
       </main>

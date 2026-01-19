@@ -1,10 +1,69 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Heart, LogOut, Calendar, Users, Sparkles } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import { eventAPI, participantAPI } from '../services/api';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://127.0.0.1:8000';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const [stats, setStats] = useState({
+    totalEvents: 0,
+    totalParticipants: 0,
+    totalMatches: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      };
+
+      // Fetch all events
+      const eventsRes = await eventAPI.getAll();
+      const events = eventsRes.data;
+
+      // Fetch participants and matches for each event
+      let totalParticipants = 0;
+      let totalMatches = 0;
+
+      await Promise.all(
+        events.map(async (event) => {
+          try {
+            const [participantsRes, matchesRes] = await Promise.all([
+              participantAPI.getAll(event.id).catch(() => ({ data: [] })),
+              axios.get(`${API_BASE_URL}/api/events/${event.id}/matches`, config).catch(() => ({ data: [] }))
+            ]);
+            totalParticipants += participantsRes.data.length;
+            totalMatches += matchesRes.data.length;
+          } catch (err) {
+            // Skip events with errors
+          }
+        })
+      );
+
+      setStats({
+        totalEvents: events.length,
+        totalParticipants,
+        totalMatches
+      });
+      setLoading(false);
+    } catch (err) {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-red-50 to-orange-50">
@@ -90,7 +149,9 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-gray-500 text-sm">Events Created</p>
-                <p className="text-3xl font-bold text-gray-800">0</p>
+                <p className="text-3xl font-bold text-gray-800">
+                  {loading ? '...' : stats.totalEvents}
+                </p>
               </div>
             </div>
           </div>
@@ -105,7 +166,9 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-gray-500 text-sm">Total Participants</p>
-                <p className="text-3xl font-bold text-gray-800">0</p>
+                <p className="text-3xl font-bold text-gray-800">
+                  {loading ? '...' : stats.totalParticipants}
+                </p>
               </div>
             </div>
           </div>
@@ -124,40 +187,54 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-gray-500 text-sm">Matches Made</p>
-                <p className="text-3xl font-bold text-gray-800">0</p>
+                <p className="text-3xl font-bold text-gray-800">
+                  {loading ? '...' : stats.totalMatches}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Coming Soon Section */}
+        {/* Features Section */}
         <div
           className="bg-white rounded-3xl shadow-xl p-8 border-2 border-pink-100 animate-slideUp"
           style={{ animationDelay: "0.4s" }}
         >
           <h3 className="text-2xl font-bold text-gray-800 mb-4">
-            🚀 Coming Soon
+            ✨ Available Features
           </h3>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-3 text-gray-700">
-              <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-              <span>Create and manage cupid events</span>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>✓ Create and manage cupid events</span>
             </div>
             <div className="flex items-center gap-3 text-gray-700">
-              <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-              <span>Customize registration forms</span>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>✓ Customize registration forms</span>
             </div>
             <div className="flex items-center gap-3 text-gray-700">
-              <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-              <span>Smart matching algorithm</span>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>✓ Participant management</span>
             </div>
             <div className="flex items-center gap-3 text-gray-700">
-              <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-              <span>Venue management</span>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>✓ Venue management</span>
             </div>
             <div className="flex items-center gap-3 text-gray-700">
-              <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-              <span>Participant notifications</span>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>✓ Manual matching</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-700">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>✓ Match-to-venue assignment</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-500">
+              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+              <span>🔜 Smart matching algorithm</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-500">
+              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+              <span>🔜 Participant notifications</span>
             </div>
           </div>
         </div>
