@@ -300,15 +300,26 @@ export default function ParticipantRegistration() {
             </div>
             <h2 className="text-3xl font-bold text-gray-800 mb-4">You're Registered! 🎉</h2>
             <p className="text-gray-600 mb-6">
-              Thanks for signing up for <strong>{event?.name}</strong>! We'll be in touch soon with your match details.
+              Thanks for signing up for <strong>{event?.name}</strong>!
             </p>
+
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4">
+              <p className="text-sm text-blue-800 mb-2">
+                <strong>📧 Please verify your email</strong>
+              </p>
+              <p className="text-xs text-blue-700">
+                We've sent a verification link to your email address. Please check your inbox and click the link to complete your registration.
+              </p>
+            </div>
+
             <div className="bg-pink-50 border-2 border-pink-200 rounded-xl p-4 mb-6">
               <p className="text-sm text-pink-800">
                 📅 Event Date: <strong>{formatDate(event?.event_date)}</strong>
               </p>
             </div>
+
             <p className="text-gray-500 text-sm">
-              Keep an eye on your email for updates!
+              Keep an eye on your email for updates and match details!
             </p>
           </div>
         </div>

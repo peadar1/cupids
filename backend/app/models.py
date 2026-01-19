@@ -103,6 +103,10 @@ class Participant(Base):
     age = Column(Integer, nullable=False)
     form_answers = Column(JSON, nullable=False)  # All form question answers
     status = Column(String, nullable=False, default="registered")  # registered, matched, withdrawn, waitlisted
+    is_verified = Column(Boolean, nullable=False, default=False)
+    verification_token = Column(String, nullable=True, unique=True)
+    verification_sent_at = Column(DateTime(timezone=True), nullable=True)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

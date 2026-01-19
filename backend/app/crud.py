@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from . import models, schemas, auth
 from typing import Optional, List
+import secrets
+from datetime import datetime, timedelta, timezone
 
 # ==================== MATCHER CRUD ====================
 
@@ -166,7 +168,10 @@ def create_participant(db: Session, event_id: int, participant: schemas.Particip
         "date_of_birth": str(participant.date_of_birth) if participant.date_of_birth else None,
         **(participant.form_answers or {})  # Include custom question answers
     }
-    
+
+    # Generate verification token
+    verification_token = secrets.token_urlsafe(32)
+
     db_participant = models.Participant(
         event_id=event_id,
         name=participant.name,
@@ -174,7 +179,10 @@ def create_participant(db: Session, event_id: int, participant: schemas.Particip
         phone_number=participant.phone,
         age=participant.age,
         form_answers=form_answers,
-        status="registered"
+        status="registered",
+        is_verified=False,
+        verification_token=verification_token,
+        verification_sent_at=datetime.now(timezone.utc)
     )
     db.add(db_participant)
     db.commit()
@@ -220,6 +228,44 @@ def delete_participant(db: Session, participant_id: int) -> bool:
     db.delete(db_participant)
     db.commit()
     return True
+
+def verify_participant_email(db: Session, token: str) -> Optional[models.Participant]:
+    """Verify participant email using verification token."""
+    participant = db.query(models.Participant).filter(
+        models.Participant.verification_token == token
+    ).first()
+
+    if not participant:
+        return None
+
+    # Check if token is expired (24 hours)
+    if participant.verification_sent_at:
+        token_age = datetime.now(timezone.utc) - participant.verification_sent_at.replace(tzinfo=timezone.utc)
+        if token_age > timedelta(hours=24):
+            return None
+
+    # Mark as verified
+    participant.is_verified = True
+    participant.verified_at = datetime.now(timezone.utc)
+    participant.verification_token = None  # Clear token after use
+
+    db.commit()
+    db.refresh(participant)
+    return participant
+
+def resend_verification_email(db: Session, participant_id: int) -> Optional[models.Participant]:
+    """Generate new verification token and update sent_at timestamp."""
+    participant = get_participant_by_id(db, participant_id)
+    if not participant or participant.is_verified:
+        return None
+
+    # Generate new token
+    participant.verification_token = secrets.token_urlsafe(32)
+    participant.verification_sent_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(participant)
+    return participant
 
 # ==================== VENUE CRUD ====================
 

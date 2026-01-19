@@ -4,6 +4,7 @@ from typing import List
 from .. import schemas, crud, models
 from ..database import get_db
 from ..dependencies import get_current_matcher
+from ..email_utils import send_verification_email
 
 router = APIRouter(
     prefix="/api/events",
@@ -350,7 +351,73 @@ def register_participant(
         )
     
     db_participant = crud.create_participant(db, event_id, participant)
+
+    # Send verification email (don't fail registration if email fails)
+    try:
+        send_verification_email(
+            to_email=db_participant.email,
+            participant_name=db_participant.name,
+            event_name=event.name,
+            verification_token=db_participant.verification_token
+        )
+    except Exception as e:
+        print(f"Failed to send verification email: {str(e)}")
+
     return db_participant
+
+# PUBLIC ENDPOINT - Verify participant email
+@router.post("/participants/verify/{token}")
+def verify_participant_email(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """Verify participant email using token (public endpoint)."""
+    participant = crud.verify_participant_email(db, token)
+
+    if not participant:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token"
+        )
+
+    return {
+        "message": "Email verified successfully",
+        "participant_name": participant.name,
+        "event_id": participant.event_id
+    }
+
+# PUBLIC ENDPOINT - Resend verification email
+@router.post("/participants/{participant_id}/resend-verification")
+def resend_participant_verification(
+    participant_id: int,
+    db: Session = Depends(get_db)
+):
+    """Resend verification email to participant (public endpoint)."""
+    participant = crud.resend_verification_email(db, participant_id)
+
+    if not participant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Participant not found or already verified"
+        )
+
+    # Get event info
+    event = crud.get_event_by_id(db, participant.event_id)
+
+    # Send verification email
+    try:
+        send_verification_email(
+            to_email=participant.email,
+            participant_name=participant.name,
+            event_name=event.name,
+            verification_token=participant.verification_token
+        )
+        return {"message": "Verification email sent successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send verification email"
+        )
 
 @router.get("/{event_id}/participants", response_model=List[schemas.ParticipantListResponse])
 def get_participants(
