@@ -31,7 +31,7 @@ class Event(Base):
     description = Column(Text, nullable=True)
     creator_id = Column(Integer, ForeignKey("matchers.id"), nullable=False)
     event_date = Column(Date, nullable=False)
-    status = Column(String, nullable=False, default="setup")  # setup, registration_open, matching_in_progress, completed, cancelled
+    status = Column(String, nullable=False, default="setup")
     settings = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -53,7 +53,7 @@ class EventMatcher(Base):
     id = Column(Integer, primary_key=True, index=True)
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
     matcher_id = Column(Integer, ForeignKey("matchers.id"), nullable=False)
-    role = Column(String, nullable=False)  # creator, matcher, viewer
+    role = Column(String, nullable=False)
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
@@ -71,12 +71,12 @@ class FormQuestion(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False, index=True)
-    question_key = Column(String, nullable=False)  # e.g., "year", "course", "interests"
+    question_key = Column(String, nullable=False)
     question_text = Column(String, nullable=False)
-    question_type = Column(String, nullable=False)  # text, textarea, select, multi_select, checkbox, radio, number, email, phone
-    options = Column(JSON, nullable=True)  # For select/checkbox options
+    question_type = Column(String, nullable=False)
+    options = Column(JSON, nullable=True)
     is_required = Column(Boolean, default=True)
-    is_standard = Column(Boolean, default=False)  # True for name, email, age, etc.
+    is_standard = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     display_order = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -101,8 +101,8 @@ class Participant(Base):
     email = Column(String, nullable=False, index=True)
     phone_number = Column(String, nullable=True)
     age = Column(Integer, nullable=False)
-    form_answers = Column(JSON, nullable=False)  # All form question answers
-    status = Column(String, nullable=False, default="registered")  # registered, matched, withdrawn, waitlisted
+    form_answers = Column(JSON, nullable=False)
+    status = Column(String, nullable=False, default="registered")
     is_verified = Column(Boolean, nullable=False, default=False)
     verification_token = Column(String, nullable=True, unique=True)
     verification_sent_at = Column(DateTime(timezone=True), nullable=True)
@@ -147,8 +147,8 @@ class Match(Base):
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False, index=True)
     participant1_id = Column(Integer, ForeignKey("participants.id"), nullable=False)
     participant2_id = Column(Integer, ForeignKey("participants.id"), nullable=False)
-    compatibility_score = Column(Integer, nullable=False)  # 0-100
-    status = Column(String, nullable=False, default="pending")  # pending, approved, notified, confirmed
+    compatibility_score = Column(Integer, nullable=False)
+    status = Column(String, nullable=False, default="pending")
     venue_id = Column(Integer, ForeignKey("venues.id"), nullable=True)
     venue_assigned_at = Column(DateTime(timezone=True), nullable=True)
     matched_by = Column(Integer, ForeignKey("matchers.id"), nullable=False)
@@ -181,7 +181,7 @@ class Venue(Base):
     address = Column(String, nullable=True)
     total_capacity = Column(Integer, nullable=False)
     available_slots = Column(Integer, nullable=False)
-    min_age = Column(Integer, nullable=False)  # 18 or 21
+    min_age = Column(Integer, nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
