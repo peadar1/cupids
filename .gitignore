@@ -40,3 +40,25 @@ htmlcov/
 # Temporary files
 *.tmp
 *.bak
+
+# SQLite database (now using Supabase)
+*.db
+*.db-shm
+*.db-wal
+
+# Test files
+test_*.py
+simple_test.py
+
+# Migration documentation (optional - can keep these)
+# MIGRATION_COMPLETE.md
+# EVENTS_MIGRATED.md
+# NEXT_STEPS.md
+# SUPABASE_QUICK_START.md
+# fix_rls_policies.sql
+
+# Claude artifacts
+.claude/
+
+# Other
+nul

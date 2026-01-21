@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, Base
-from . import models
-from .routers import auth, events, venues  # Add venues here
-
-# Create all database tables
-Base.metadata.create_all(bind=engine)
+from .routers import (
+    auth_supabase as auth,
+    events_supabase as events,
+    venues_supabase as venues,
+    participants_supabase as participants,
+    form_questions_supabase as form_questions,
+    matches_supabase as matches
+)
 
 # Create FastAPI app
 app = FastAPI(
@@ -31,7 +33,10 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router)
 app.include_router(events.router)
-app.include_router(venues.router)  
+app.include_router(venues.router)
+app.include_router(participants.router)
+app.include_router(form_questions.router)
+app.include_router(matches.router)  
 
 @app.get("/")
 def read_root():

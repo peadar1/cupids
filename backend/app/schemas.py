@@ -16,13 +16,19 @@ class MatcherLogin(BaseModel):
     password: str
 
 class MatcherResponse(MatcherBase):
-    id: int
+    id: str  # UUID from Supabase
     created_at: datetime
     last_login: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    matcher: MatcherResponse
+
+# Alias for compatibility
+class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     matcher: MatcherResponse
@@ -45,33 +51,33 @@ class EventUpdate(BaseModel):
     settings: Optional[dict] = None
 
 class EventResponse(EventBase):
-    id: int
-    creator_id: int
+    id: str  # UUID from Supabase
+    creator_id: str  # UUID from Supabase
     status: str
     settings: Optional[dict] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 class EventListResponse(BaseModel):
-    id: int
+    id: str  # UUID from Supabase
     name: str
     event_date: date
     status: str
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 # Public event response (limited info for participants)
 class EventPublicResponse(BaseModel):
-    id: int
+    id: str  # UUID from Supabase
     name: str
     description: Optional[str] = None
     event_date: date
     status: str
     settings: Optional[dict] = None  # Include settings for form configuration
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 # ==================== PARTICIPANT SCHEMAS ====================
@@ -107,8 +113,8 @@ class ParticipantUpdate(BaseModel):
     form_answers: Optional[dict] = None
 
 class ParticipantResponse(BaseModel):
-    id: int
-    event_id: int
+    id: str  # UUID from Supabase
+    event_id: str  # UUID from Supabase
     name: str
     email: str
     phone_number: Optional[str] = None
@@ -117,17 +123,17 @@ class ParticipantResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 class ParticipantListResponse(BaseModel):
-    id: int
+    id: str  # UUID from Supabase
     name: str
     email: str
     age: int
     status: str
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 # ==================== VENUE SCHEMAS ====================
@@ -149,13 +155,13 @@ class VenueUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class VenueResponse(VenueBase):
-    id: int
-    event_id: int
+    id: str  # UUID from Supabase
+    event_id: str  # UUID from Supabase
     available_slots: int
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 # ==================== FORM QUESTION SCHEMAS ====================
@@ -181,17 +187,17 @@ class FormQuestionUpdate(BaseModel):
     display_order: Optional[int] = None
 
 class FormQuestionResponse(FormQuestionBase):
-    id: int
-    event_id: int
+    id: str  # UUID from Supabase
+    event_id: str  # UUID from Supabase
     is_standard: bool
     display_order: int
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 class FormQuestionReorderItem(BaseModel):
-    id: int
+    id: str  # UUID from Supabase
     display_order: int
 
 class FormQuestionReorder(BaseModel):
@@ -200,10 +206,10 @@ class FormQuestionReorder(BaseModel):
 # ==================== MATCH SCHEMAS ====================
 
 class MatchBase(BaseModel):
-    participant1_id: int
-    participant2_id: int
+    participant1_id: str  # UUID from Supabase
+    participant2_id: str  # UUID from Supabase
     compatibility_score: int = Field(..., ge=0, le=100)
-    venue_id: Optional[int] = None
+    venue_id: Optional[str] = None  # UUID from Supabase
     notes: Optional[str] = None
 
 class MatchCreate(MatchBase):
@@ -212,11 +218,11 @@ class MatchCreate(MatchBase):
 class MatchUpdate(BaseModel):
     compatibility_score: Optional[int] = Field(None, ge=0, le=100)
     status: Optional[str] = None
-    venue_id: Optional[int] = None
+    venue_id: Optional[str] = None  # UUID from Supabase
     notes: Optional[str] = None
 
 class ParticipantMinimal(BaseModel):
-    id: int
+    id: str  # UUID from Supabase
     name: str
     age: int
     gender: str
@@ -224,14 +230,14 @@ class ParticipantMinimal(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class MatchResponse(BaseModel):
-    id: int
-    event_id: int
-    participant1_id: int
-    participant2_id: int
+    id: str  # UUID from Supabase
+    event_id: str  # UUID from Supabase
+    participant1_id: str  # UUID from Supabase
+    participant2_id: str  # UUID from Supabase
     compatibility_score: int
     status: str
-    venue_id: Optional[int] = None
-    matched_by: int
+    venue_id: Optional[str] = None  # UUID from Supabase
+    matched_by: str  # UUID from Supabase
     notes: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
