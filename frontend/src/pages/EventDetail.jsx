@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { eventAPI, participantAPI } from '../services/api';
+import { eventAPI, participantAPI, venueAPI } from '../services/api';
 import {
   Heart,
   LogOut,
@@ -49,9 +49,10 @@ export default function EventDetail() {
 
   const fetchEvent = async () => {
     try {
-      const [eventResponse, participantsResponse] = await Promise.all([
+      const [eventResponse, participantsResponse, venuesResponse] = await Promise.all([
         eventAPI.getById(id),
-        participantAPI.getAll(id).catch(() => ({ data: [] }))
+        participantAPI.getAll(id).catch(() => ({ data: [] })),
+        venueAPI.getAll(id).catch(() => ({ data: [] }))
       ]);
       setEvent(eventResponse.data);
       setParticipantCount(participantsResponse.data.length);
@@ -61,7 +62,7 @@ export default function EventDetail() {
         event_date: eventResponse.data.event_date,
         status: eventResponse.data.status,
       });
-      setVenueCount(venuesRes.data.length);
+      setVenueCount(venuesResponse.data.length);
       setLoading(false);
     } catch (err) {
       setError("Failed to load event");
@@ -458,7 +459,7 @@ export default function EventDetail() {
               </div>
               <div>
                 <p className="text-gray-500 text-sm">Venues</p>
-                <p className="text-3xl font-bold text-gray-800">0</p>
+                <p className="text-3xl font-bold text-gray-800">{venueCount}</p>
               </div>
             </div>
           </div>
