@@ -1,7 +1,9 @@
 """Participants router using Supabase"""
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from supabase import Client
 from typing import List, Dict
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from .. import schemas
 from .. import crud_supabase as crud
 from ..supabase_client import get_supabase_admin
@@ -12,20 +14,32 @@ router = APIRouter(
     tags=["participants"]
 )
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/register", response_model=schemas.ParticipantResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("3/hour")
 def register_participant(
+    request: Request,
     event_id: str,
     participant: schemas.ParticipantRegister,
     supabase: Client = Depends(get_supabase_admin)
 ):
-    """Public endpoint for participant registration (no auth required)."""
+    """Public endpoint for participant registration. Rate limited to 3 registrations per hour per IP."""
     # Verify event exists
     event = crud.get_event_by_id(supabase, event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Event not found"
+        )
+
+    # Check if email is already registered for this event
+    existing_participants = crud.get_event_participants(supabase, event_id)
+    if any(p['email'].lower() == participant.email.lower() for p in existing_participants):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This email is already registered for this event"
         )
 
     # Create participant

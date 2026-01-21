@@ -14,6 +14,10 @@ dash==3.0.4
 Deprecated==1.2.18
 deprecation==2.1.0
 fastapi==0.103.2
+python-dotenv==1.0.0
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+slowapi==0.1.9
 Flask==3.0.3
 fsspec==2026.1.0
 h11==0.16.0

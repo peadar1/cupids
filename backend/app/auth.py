@@ -2,14 +2,26 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# JWT settings
-SECRET_KEY = "your-secret-key-change-this-in-production"  # TODO: Move to .env
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+# JWT settings from environment variables
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24 * 7))  # Default 7 days
+
+# Validate JWT configuration
+if not SECRET_KEY:
+    raise ValueError(
+        "Missing JWT configuration. Please set JWT_SECRET_KEY in .env file. "
+        "Generate a secure key with: openssl rand -hex 32"
+    )
 
 def hash_password(password: str) -> str:
     """Hash a password for storing."""
