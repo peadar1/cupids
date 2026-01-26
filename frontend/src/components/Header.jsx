@@ -27,7 +27,7 @@ export default function Header({ activePage }) {
             >
               <Heart className="text-pink-500" size={32} fill="currentColor" />
               <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
-                Cupid's Matcher
+                Qpid's Matcher
               </h1>
             </div>
 

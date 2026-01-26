@@ -55,7 +55,7 @@ export default function Login() {
             <Sparkles className="text-orange-400" size={32} />
           </div>
           <h1 className="text-5xl font-bold bg-gradient-to-r from-pink-600 via-red-500 to-orange-500 bg-clip-text text-transparent mb-2">
-            Cupid's Matcher
+            Qpids Matcher
           </h1>
           <p className="text-gray-600 text-lg">Find your perfect match</p>
         </div>

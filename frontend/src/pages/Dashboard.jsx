@@ -152,7 +152,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-3 text-gray-700">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>✓ Create and manage cupid events</span>
+              <span>✓ Create and manage Qpid events</span>
             </div>
             <div className="flex items-center gap-3 text-gray-700">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
