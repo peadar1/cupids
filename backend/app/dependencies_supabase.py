@@ -5,7 +5,7 @@ from supabase import Client
 from . import auth
 from . import crud_supabase as crud
 from .supabase_client import get_supabase_admin
-from typing import Dict
+from typing import Dict, Tuple
 
 security = HTTPBearer()
 
@@ -45,3 +45,32 @@ def get_current_matcher(
         )
 
     return matcher
+
+
+def verify_event_ownership(
+    event_id: str,
+    current_matcher: Dict = Depends(get_current_matcher),
+    supabase: Client = Depends(get_supabase_admin)
+) -> Tuple[Dict, Dict]:
+    """Verify that the current matcher owns the specified event.
+
+    Returns:
+        Tuple of (event, current_matcher) if authorized.
+
+    Raises:
+        HTTPException: 404 if event not found, 403 if not authorized.
+    """
+    event = crud.get_event_by_id(supabase, event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found"
+        )
+
+    if event['creator_id'] != current_matcher['id']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this event"
+        )
+
+    return event, current_matcher

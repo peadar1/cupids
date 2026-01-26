@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { API_BASE_URL } from '../config';
 
 // Create axios instance
 const api = axios.create({
@@ -72,12 +71,14 @@ export const formQuestionAPI = {
   getPublic: (eventId) => api.get(`/api/events/${eventId}/form-questions/public`),
 };
 
-// Match API calls (for future use)
+// Match API calls
 export const matchAPI = {
   getAll: (eventId) => api.get(`/api/events/${eventId}/matches`),
-  generate: (eventId) => api.post(`/api/events/${eventId}/matches/generate`),
   getById: (eventId, matchId) => api.get(`/api/events/${eventId}/matches/${matchId}`),
+  create: (eventId, data) => api.post(`/api/events/${eventId}/matches`, data),
   update: (eventId, matchId, data) => api.put(`/api/events/${eventId}/matches/${matchId}`, data),
+  delete: (eventId, matchId) => api.delete(`/api/events/${eventId}/matches/${matchId}`),
+  generate: (eventId) => api.post(`/api/events/${eventId}/matches/generate`),
 };
 
 // Export the axios instance for direct use if needed

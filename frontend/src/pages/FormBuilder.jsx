@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { eventAPI, formQuestionAPI } from '../services/api';
-import { 
-  Heart, 
-  LogOut, 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   Plus,
   GripVertical,
   Edit2,
@@ -29,6 +26,7 @@ import {
   Phone,
   Lock
 } from 'lucide-react';
+import Header from '../components/Header';
 
 // Question type options with icons
 const QUESTION_TYPES = [
@@ -56,7 +54,6 @@ const STANDARD_QUESTIONS = [
 
 export default function FormBuilder() {
   const { eventId } = useParams();
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
   
   const [event, setEvent] = useState(null);
@@ -87,17 +84,18 @@ export default function FormBuilder() {
 
   const fetchEventAndQuestions = async () => {
     try {
+      setError(''); // Clear any previous errors
       const [eventRes, questionsRes] = await Promise.all([
         eventAPI.getById(eventId),
         formQuestionAPI.getAll(eventId)
       ]);
       setEvent(eventRes.data);
       setQuestions(questionsRes.data);
-      
+
       // Load disabled standard fields from event settings
       const settings = eventRes.data.settings || {};
       setDisabledStandardFields(settings.disabled_standard_fields || []);
-      
+
       setLoading(false);
     } catch (err) {
       setError('Failed to load form questions');
@@ -307,50 +305,7 @@ export default function FormBuilder() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-red-50 to-orange-50">
-      {/* Header */}
-      <header className="bg-white border-b-2 border-pink-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                <Heart className="text-pink-500" size={32} fill="currentColor" />
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
-                  Cupid's Matcher
-                </h1>
-              </div>
-              
-              <nav className="flex gap-4">
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                >
-                  Dashboard
-                </button>
-                <button
-                  onClick={() => navigate('/events')}
-                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                >
-                  Events
-                </button>
-              </nav>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Welcome back,</p>
-                <p className="font-semibold text-gray-800">{user?.name}</p>
-              </div>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-              >
-                <LogOut size={18} />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header activePage="events" />
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

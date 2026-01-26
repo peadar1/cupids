@@ -1,17 +1,17 @@
 """Events router using Supabase - core event operations only"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from supabase import Client
-from typing import List
+from typing import List, Dict
 from .. import schemas
 from .. import crud_supabase as crud
 from ..supabase_client import get_supabase_admin
 from ..dependencies_supabase import get_current_matcher
-from typing import Dict
 
 router = APIRouter(
     prefix="/api/events",
     tags=["events"]
 )
+
 
 # ==================== EVENT ROUTES ====================
 
@@ -22,7 +22,30 @@ def get_my_events(
 ):
     """Get all events for the current matcher."""
     events = crud.get_matcher_events(supabase, current_matcher['id'])
-    return events
+
+    if not events:
+        return []
+
+    # Get counts for all events efficiently
+    event_ids = [event['id'] for event in events]
+    counts = crud.get_event_counts(supabase, event_ids)
+
+    # Build response with counts
+    result = []
+    for event in events:
+        event_counts = counts.get(event['id'], {'participant_count': 0, 'match_count': 0})
+        event_dict = {
+            'id': event['id'],
+            'name': event['name'],
+            'event_date': event['event_date'],
+            'status': event['status'],
+            'created_at': event['created_at'],
+            'participant_count': event_counts['participant_count'],
+            'match_count': event_counts['match_count']
+        }
+        result.append(event_dict)
+
+    return result
 
 
 @router.get("/{event_id}", response_model=schemas.EventResponse)

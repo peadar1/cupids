@@ -1,6 +1,15 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, model_validator
 from typing import Optional, List
 from datetime import datetime, date
+from enum import Enum
+
+
+class EventStatus(str, Enum):
+    setup = "setup"
+    registration_open = "registration_open"
+    matching_in_progress = "matching_in_progress"
+    completed = "completed"
+    cancelled = "cancelled"
 
 # ==================== MATCHER SCHEMAS ====================
 
@@ -47,7 +56,7 @@ class EventUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
     event_date: Optional[date] = None
-    status: Optional[str] = None
+    status: Optional[EventStatus] = None
     settings: Optional[dict] = None
 
 class EventResponse(EventBase):
@@ -66,6 +75,8 @@ class EventListResponse(BaseModel):
     event_date: date
     status: str
     created_at: datetime
+    participant_count: int = 0
+    match_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -86,11 +97,9 @@ class ParticipantBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
     phone: Optional[str] = Field(None, max_length=20)
-    date_of_birth: Optional[date] = None
-    age: int = Field(..., ge=18, le=100)
-    gender: str = Field(..., pattern="^(male|female|non_binary|other)$")
-    interested_in: str = Field(..., pattern="^(male|female|everyone)$")
-    bio: Optional[str] = Field(None, max_length=500)
+    age: Optional[int] = Field(None, ge=18, le=100)
+    gender: Optional[str] = Field(None, pattern="^(male|female|non_binary|other)$")
+    interested_in: Optional[str] = Field(None, pattern="^(male|female|everyone)$")
 
 # For public registration (no auth required)
 class ParticipantRegister(ParticipantBase):
@@ -108,7 +117,6 @@ class ParticipantUpdate(BaseModel):
     age: Optional[int] = Field(None, ge=18, le=100)
     gender: Optional[str] = Field(None, pattern="^(male|female|non_binary|other)$")
     interested_in: Optional[str] = Field(None, pattern="^(male|female|everyone)$")
-    bio: Optional[str] = Field(None, max_length=500)
     status: Optional[str] = Field(None, pattern="^(registered|matched|withdrawn|waitlisted)$")
     form_answers: Optional[dict] = None
 
@@ -117,20 +125,37 @@ class ParticipantResponse(BaseModel):
     event_id: str  # UUID from Supabase
     name: str
     email: str
-    phone_number: Optional[str] = None
-    age: int
-    form_answers: dict
+    phone: Optional[str] = Field(None, validation_alias='phone_number')
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    interested_in: Optional[str] = None
+    form_answers: Optional[dict] = None
     status: str
+    is_verified: Optional[bool] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    @classmethod
+    def model_validate(cls, obj):
+        # Extract gender and interested_in from form_answers if not present
+        if isinstance(obj, dict):
+            form_answers = obj.get('form_answers', {})
+            if form_answers:
+                if 'gender' not in obj or obj['gender'] is None:
+                    obj['gender'] = form_answers.get('gender')
+                if 'interested_in' not in obj or obj['interested_in'] is None:
+                    obj['interested_in'] = form_answers.get('interested_in')
+        return super().model_validate(obj)
 
 class ParticipantListResponse(BaseModel):
     id: str  # UUID from Supabase
     name: str
     email: str
-    age: int
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    interested_in: Optional[str] = None
     status: str
     created_at: datetime
 
@@ -177,6 +202,15 @@ class FormQuestionBase(BaseModel):
 class FormQuestionCreate(FormQuestionBase):
     display_order: Optional[int] = None
 
+    @model_validator(mode='after')
+    def validate_options_for_select_types(self):
+        """Ensure select/radio/checkbox types have at least 2 options."""
+        select_types = {'select', 'multi_select', 'radio', 'checkbox'}
+        if self.question_type in select_types:
+            if not self.options or len(self.options) < 2:
+                raise ValueError(f'Question type "{self.question_type}" requires at least 2 options')
+        return self
+
 class FormQuestionUpdate(BaseModel):
     question_key: Optional[str] = Field(None, min_length=1, max_length=50)
     question_text: Optional[str] = Field(None, min_length=1, max_length=500)
@@ -213,7 +247,12 @@ class MatchBase(BaseModel):
     notes: Optional[str] = None
 
 class MatchCreate(MatchBase):
-    pass
+    @model_validator(mode='after')
+    def validate_different_participants(self):
+        """Prevent matching a participant with themselves."""
+        if self.participant1_id == self.participant2_id:
+            raise ValueError('Cannot match a participant with themselves')
+        return self
 
 class MatchUpdate(BaseModel):
     compatibility_score: Optional[int] = Field(None, ge=0, le=100)

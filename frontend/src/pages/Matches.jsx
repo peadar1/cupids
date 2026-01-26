@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { eventAPI, participantAPI, venueAPI } from '../services/api';
-import axios from 'axios';
+import { eventAPI, participantAPI, venueAPI, matchAPI } from '../services/api';
 import {
   Heart,
-  LogOut,
   ArrowLeft,
   Plus,
   Users,
@@ -20,12 +17,11 @@ import {
   ChevronUp,
   Sparkles
 } from 'lucide-react';
-
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { getMatchStatusColor } from '../utils/helpers';
+import Header from '../components/Header';
 
 export default function Matches() {
   const { eventId } = useParams();
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [event, setEvent] = useState(null);
@@ -52,18 +48,13 @@ export default function Matches() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
+      setError(''); // Clear any previous errors
 
       const [eventRes, participantsRes, venuesRes, matchesRes] = await Promise.all([
         eventAPI.getById(eventId),
         participantAPI.getAll(eventId),
         venueAPI.getAll(eventId),
-        axios.get(`${API_BASE_URL}/api/events/${eventId}/matches`, config).catch(() => ({ data: [] }))
+        matchAPI.getAll(eventId).catch(() => ({ data: [] }))
       ]);
 
       setEvent(eventRes.data);
@@ -81,7 +72,7 @@ export default function Matches() {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value === '' ? '' : (name.includes('_id') ? parseInt(value) : value),
+      [name]: value,
     });
   };
 
@@ -101,23 +92,13 @@ export default function Matches() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${API_BASE_URL}/api/events/${eventId}/matches`,
-        {
-          participant1_id: formData.participant1_id,
-          participant2_id: formData.participant2_id,
-          compatibility_score: 75, // Default score for manual matches
-          venue_id: formData.venue_id || null,
-          notes: formData.notes || null
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      await matchAPI.create(eventId, {
+        participant1_id: formData.participant1_id,
+        participant2_id: formData.participant2_id,
+        compatibility_score: 75, // Default score for manual matches
+        venue_id: formData.venue_id || null,
+        notes: formData.notes || null
+      });
 
       fetchData();
       setShowCreateForm(false);
@@ -135,15 +116,7 @@ export default function Matches() {
   const handleDeleteMatch = async (matchId) => {
     if (window.confirm('Are you sure you want to delete this match?')) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.delete(
-          `${API_BASE_URL}/api/events/${eventId}/matches/${matchId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
+        await matchAPI.delete(eventId, matchId);
         fetchData();
       } catch (err) {
         setError('Failed to delete match');
@@ -153,17 +126,7 @@ export default function Matches() {
 
   const handleAssignVenue = async (matchId, venueId) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `${API_BASE_URL}/api/events/${eventId}/matches/${matchId}`,
-        { venue_id: venueId ? parseInt(venueId) : null },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      await matchAPI.update(eventId, matchId, { venue_id: venueId || null });
       fetchData();
     } catch (err) {
       setError('Failed to assign venue');
@@ -178,20 +141,6 @@ export default function Matches() {
     return venues.find(v => v.id === id);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'approved':
-        return 'bg-green-100 text-green-700 border-green-200';
-      case 'notified':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'confirmed':
-        return 'bg-purple-100 text-purple-700 border-purple-200';
-      default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-  };
 
   // Filter matches
   const filteredMatches = matches.filter(match => {
@@ -229,50 +178,7 @@ export default function Matches() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-red-50 to-orange-50">
-      {/* Header */}
-      <header className="bg-white border-b-2 border-pink-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                <Heart className="text-pink-500" size={32} fill="currentColor" />
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
-                  Cupid's Matcher
-                </h1>
-              </div>
-
-              <nav className="flex gap-4">
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                >
-                  Dashboard
-                </button>
-                <button
-                  onClick={() => navigate('/events')}
-                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                >
-                  Events
-                </button>
-              </nav>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Welcome back,</p>
-                <p className="font-semibold text-gray-800">{user?.name}</p>
-              </div>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-              >
-                <LogOut size={18} />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header activePage="events" />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -577,7 +483,7 @@ export default function Matches() {
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border-2 ${getStatusColor(match.status)}`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border-2 ${getMatchStatusColor(match.status)}`}>
                           {match.status.toUpperCase()}
                         </span>
                         <button

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { eventAPI } from '../services/api';
-import { Heart, LogOut, Plus, Calendar, Users, ArrowRight, Sparkles } from 'lucide-react';
+import { Plus, Calendar, Users, ArrowRight, Sparkles, Heart } from 'lucide-react';
+import { getEventStatusColor, formatDate } from '../utils/helpers';
+import Header from '../components/Header';
 
 export default function Events() {
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,6 +17,7 @@ export default function Events() {
 
   const fetchEvents = async () => {
     try {
+      setError(''); // Clear any previous errors
       const response = await eventAPI.getAll();
       setEvents(response.data);
       setLoading(false);
@@ -26,75 +27,10 @@ export default function Events() {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'setup':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'registration_open':
-        return 'bg-green-100 text-green-700 border-green-200';
-      case 'matching_in_progress':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'completed':
-        return 'bg-gray-100 text-gray-700 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-red-50 to-orange-50">
-      {/* Header */}
-      <header className="bg-white border-b-2 border-pink-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                <Heart className="text-pink-500" size={32} fill="currentColor" />
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
-                  Cupid's Matcher
-                </h1>
-              </div>
-              
-              <nav className="flex gap-4">
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                >
-                  Dashboard
-                </button>
-                <button
-                  onClick={() => navigate('/events')}
-                  className="text-pink-600 font-semibold border-b-2 border-pink-600"
-                >
-                  Events
-                </button>
-              </nav>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Welcome back,</p>
-                <p className="font-semibold text-gray-800">{user?.name}</p>
-              </div>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-              >
-                <LogOut size={18} />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header activePage="events" />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -160,7 +96,7 @@ export default function Events() {
               >
                 {/* Status Badge */}
                 <div className="flex items-center justify-between mb-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border-2 ${getStatusColor(event.status)}`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border-2 ${getEventStatusColor(event.status)}`}>
                     {event.status.replace('_', ' ').toUpperCase()}
                   </span>
                   <ArrowRight className="text-pink-500 opacity-0 group-hover:opacity-100 transition-opacity" size={20} />
@@ -181,11 +117,11 @@ export default function Events() {
                 <div className="pt-4 border-t-2 border-gray-100 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
                     <Users size={16} />
-                    <span>0 participants</span>
+                    <span>{event.participant_count || 0} participants</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
                     <Heart size={16} fill="currentColor" />
-                    <span>0 matches</span>
+                    <span>{event.match_count || 0} matches</span>
                   </div>
                 </div>
               </div>

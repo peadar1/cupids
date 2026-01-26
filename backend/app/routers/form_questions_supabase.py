@@ -56,6 +56,49 @@ def get_form_questions(
     return questions
 
 
+@router.post("", response_model=schemas.FormQuestionResponse, status_code=status.HTTP_201_CREATED)
+def create_form_question(
+    event_id: str,
+    question: schemas.FormQuestionCreate,
+    current_matcher: Dict = Depends(get_current_matcher),
+    supabase: Client = Depends(get_supabase_admin)
+):
+    """Create a new form question."""
+    # Verify event access
+    event = crud.get_event_by_id(supabase, event_id)
+    if not event or event['creator_id'] != current_matcher['id']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this event"
+        )
+
+    question_data = question.model_dump()
+    db_question = crud.create_form_question(supabase, event_id, question_data)
+    return db_question
+
+
+# IMPORTANT: /reorder must come BEFORE /{question_id} to avoid route conflicts
+@router.put("/reorder", status_code=status.HTTP_200_OK)
+def reorder_form_questions(
+    event_id: str,
+    reorder_data: schemas.FormQuestionReorder,
+    current_matcher: Dict = Depends(get_current_matcher),
+    supabase: Client = Depends(get_supabase_admin)
+):
+    """Reorder form questions."""
+    # Verify event access
+    event = crud.get_event_by_id(supabase, event_id)
+    if not event or event['creator_id'] != current_matcher['id']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this event"
+        )
+
+    questions = [q.model_dump() for q in reorder_data.questions]
+    crud.reorder_form_questions(supabase, questions)
+    return {"message": "Questions reordered successfully"}
+
+
 @router.get("/{question_id}", response_model=schemas.FormQuestionResponse)
 def get_form_question(
     event_id: str,
@@ -80,27 +123,6 @@ def get_form_question(
         )
 
     return question
-
-
-@router.post("", response_model=schemas.FormQuestionResponse, status_code=status.HTTP_201_CREATED)
-def create_form_question(
-    event_id: str,
-    question: schemas.FormQuestionCreate,
-    current_matcher: Dict = Depends(get_current_matcher),
-    supabase: Client = Depends(get_supabase_admin)
-):
-    """Create a new form question."""
-    # Verify event access
-    event = crud.get_event_by_id(supabase, event_id)
-    if not event or event['creator_id'] != current_matcher['id']:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this event"
-        )
-
-    question_data = question.model_dump()
-    db_question = crud.create_form_question(supabase, event_id, question_data)
-    return db_question
 
 
 @router.put("/{question_id}", response_model=schemas.FormQuestionResponse)
@@ -130,27 +152,6 @@ def update_form_question(
     question_data = question_update.model_dump(exclude_unset=True)
     updated_question = crud.update_form_question(supabase, question_id, question_data)
     return updated_question
-
-
-@router.put("/reorder", status_code=status.HTTP_200_OK)
-def reorder_form_questions(
-    event_id: str,
-    reorder_data: schemas.FormQuestionReorder,
-    current_matcher: Dict = Depends(get_current_matcher),
-    supabase: Client = Depends(get_supabase_admin)
-):
-    """Reorder form questions."""
-    # Verify event access
-    event = crud.get_event_by_id(supabase, event_id)
-    if not event or event['creator_id'] != current_matcher['id']:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this event"
-        )
-
-    questions = [q.model_dump() for q in reorder_data.questions]
-    crud.reorder_form_questions(supabase, questions)
-    return {"message": "Questions reordered successfully"}
 
 
 @router.delete("/{question_id}", status_code=status.HTTP_204_NO_CONTENT)

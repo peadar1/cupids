@@ -1,8 +1,12 @@
 """Supabase CRUD operations"""
+import logging
 from supabase import Client
+from postgrest.exceptions import APIError
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from . import auth
+
+logger = logging.getLogger(__name__)
 
 # ===================================
 # MATCHER OPERATIONS
@@ -13,7 +17,9 @@ def get_matcher_by_email(supabase: Client, email: str) -> Optional[Dict]:
     try:
         response = supabase.table('matchers').select('*').eq('email', email).single().execute()
         return response.data
-    except Exception:
+    except APIError as e:
+        # No row found or other API error
+        logger.debug(f"Matcher not found for email {email}: {e}")
         return None
 
 
@@ -22,7 +28,8 @@ def get_matcher_by_id(supabase: Client, matcher_id: str) -> Optional[Dict]:
     try:
         response = supabase.table('matchers').select('*').eq('id', matcher_id).single().execute()
         return response.data
-    except Exception:
+    except APIError as e:
+        logger.debug(f"Matcher not found for id {matcher_id}: {e}")
         return None
 
 
@@ -60,8 +67,8 @@ def get_venue_by_id(supabase: Client, venue_id: str) -> Optional[Dict]:
     try:
         response = supabase.table('venues').select('*').eq('id', venue_id).single().execute()
         return response.data
-    except Exception as e:
-        # Handle not found
+    except APIError as e:
+        logger.debug(f"Venue not found for id {venue_id}: {e}")
         return None
 
 
@@ -137,7 +144,8 @@ def get_event_by_id(supabase: Client, event_id: str) -> Optional[Dict]:
     try:
         response = supabase.table('events').select('*').eq('id', event_id).single().execute()
         return response.data
-    except Exception:
+    except APIError as e:
+        logger.debug(f"Event not found for id {event_id}: {e}")
         return None
 
 
@@ -147,6 +155,26 @@ def get_matcher_events(supabase: Client, matcher_id: str) -> List[Dict]:
         'creator_id', matcher_id
     ).order('created_at', desc=True).execute()
     return response.data
+
+
+def get_event_counts(supabase: Client, event_ids: List[str]) -> Dict[str, Dict[str, int]]:
+    """Get participant and match counts for multiple events efficiently."""
+    if not event_ids:
+        return {}
+
+    counts = {eid: {'participant_count': 0, 'match_count': 0} for eid in event_ids}
+
+    # Get participant counts
+    for event_id in event_ids:
+        p_response = supabase.table('participants').select('id', count='exact').eq('event_id', event_id).execute()
+        counts[event_id]['participant_count'] = p_response.count or 0
+
+    # Get match counts
+    for event_id in event_ids:
+        m_response = supabase.table('matches').select('id', count='exact').eq('event_id', event_id).execute()
+        counts[event_id]['match_count'] = m_response.count or 0
+
+    return counts
 
 
 def create_event(supabase: Client, event_data: Dict, creator_id: str) -> Dict:
@@ -199,7 +227,8 @@ def get_participant_by_id(supabase: Client, participant_id: str) -> Optional[Dic
     try:
         response = supabase.table('participants').select('*').eq('id', participant_id).single().execute()
         return response.data
-    except Exception:
+    except APIError as e:
+        logger.debug(f"Participant not found for id {participant_id}: {e}")
         return None
 
 
@@ -211,24 +240,30 @@ def get_event_participants(supabase: Client, event_id: str) -> List[Dict]:
     return response.data
 
 
+def participant_email_exists(supabase: Client, event_id: str, email: str) -> bool:
+    """Check if a participant with given email exists in an event (case-insensitive)."""
+    response = supabase.table('participants').select('id', count='exact').eq(
+        'event_id', event_id
+    ).ilike('email', email).execute()
+    return (response.count or 0) > 0
+
+
 def create_participant(supabase: Client, event_id: str, participant_data: Dict) -> Dict:
     """Create a new participant."""
-    # Convert date to string if it's a date object
-    date_of_birth = participant_data.get('date_of_birth')
-    if date_of_birth and hasattr(date_of_birth, 'isoformat'):
-        date_of_birth = date_of_birth.isoformat()
+    # Store gender and interested_in in form_answers if provided
+    form_answers = participant_data.get('form_answers', {})
+    if 'gender' in participant_data:
+        form_answers['gender'] = participant_data['gender']
+    if 'interested_in' in participant_data:
+        form_answers['interested_in'] = participant_data['interested_in']
 
     participant_insert = {
         'event_id': event_id,
         'name': participant_data['name'],
         'email': participant_data['email'],
         'phone_number': participant_data.get('phone'),
-        'date_of_birth': date_of_birth,
-        'age': participant_data['age'],
-        'gender': participant_data['gender'],
-        'interested_in': participant_data['interested_in'],
-        'bio': participant_data.get('bio'),
-        'form_answers': participant_data.get('form_answers', {}),
+        'age': participant_data.get('age'),
+        'form_answers': form_answers,
         'status': 'registered'
     }
 
@@ -270,7 +305,8 @@ def get_form_question_by_id(supabase: Client, question_id: str) -> Optional[Dict
     try:
         response = supabase.table('form_questions').select('*').eq('id', question_id).single().execute()
         return response.data
-    except Exception:
+    except APIError as e:
+        logger.debug(f"Form question not found for id {question_id}: {e}")
         return None
 
 
@@ -345,7 +381,8 @@ def get_match_by_id(supabase: Client, match_id: str) -> Optional[Dict]:
     try:
         response = supabase.table('matches').select('*').eq('id', match_id).single().execute()
         return response.data
-    except Exception:
+    except APIError as e:
+        logger.debug(f"Match not found for id {match_id}: {e}")
         return None
 
 

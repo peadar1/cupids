@@ -1,15 +1,11 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Heart, LogOut, Calendar, Users, Sparkles } from "lucide-react";
-import { useNavigate } from 'react-router-dom';
-import { eventAPI, participantAPI } from '../services/api';
-import axios from 'axios';
-
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { Calendar, Users, Sparkles, Heart } from "lucide-react";
+import { eventAPI, participantAPI, matchAPI } from '../services/api';
+import Header from '../components/Header';
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [stats, setStats] = useState({
     totalEvents: 0,
@@ -24,13 +20,6 @@ export default function Dashboard() {
 
   const fetchDashboardStats = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
       // Fetch all events
       const eventsRes = await eventAPI.getAll();
       const events = eventsRes.data;
@@ -44,7 +33,7 @@ export default function Dashboard() {
           try {
             const [participantsRes, matchesRes] = await Promise.all([
               participantAPI.getAll(event.id).catch(() => ({ data: [] })),
-              axios.get(`${API_BASE_URL}/api/events/${event.id}/matches`, config).catch(() => ({ data: [] }))
+              matchAPI.getAll(event.id).catch(() => ({ data: [] }))
             ]);
             totalParticipants += participantsRes.data.length;
             totalMatches += matchesRes.data.length;
@@ -67,50 +56,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-red-50 to-orange-50">
-      {/* Header */}
-      <header className="bg-white border-b-2 border-pink-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                <Heart className="text-pink-500" size={32} fill="currentColor" />
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
-                  Cupid's Matcher
-                </h1>
-              </div>
-              
-              <nav className="flex gap-4">
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="text-pink-600 font-semibold border-b-2 border-pink-600"
-                >
-                  Dashboard
-                </button>
-                <button
-                  onClick={() => navigate('/events')}
-                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                >
-                  Events
-                </button>
-              </nav>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Welcome back,</p>
-                <p className="font-semibold text-gray-800">{user?.name}</p>
-              </div>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-              >
-                <LogOut size={18} />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header activePage="dashboard" />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

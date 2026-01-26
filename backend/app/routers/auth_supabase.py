@@ -1,8 +1,6 @@
 """Auth router using Supabase"""
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from supabase import Client
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from .. import schemas, auth
 from .. import crud_supabase as crud
 from ..supabase_client import get_supabase_admin
@@ -12,17 +10,12 @@ router = APIRouter(
     tags=["auth"]
 )
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
-
 @router.post("/signup", response_model=schemas.AuthResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/hour")
 def signup(
-    request: Request,
     matcher: schemas.MatcherCreate,
     supabase: Client = Depends(get_supabase_admin)
 ):
-    """Register a new matcher. Rate limited to 5 signups per hour per IP."""
+    """Register a new matcher."""
     # Check if email already exists
     existing_matcher = crud.get_matcher_by_email(supabase, matcher.email)
     if existing_matcher:
@@ -52,13 +45,11 @@ def signup(
 
 
 @router.post("/login", response_model=schemas.AuthResponse)
-@limiter.limit("10/minute")
 def login(
-    request: Request,
     credentials: schemas.MatcherLogin,
     supabase: Client = Depends(get_supabase_admin)
 ):
-    """Login with email and password. Rate limited to 10 attempts per minute per IP."""
+    """Login with email and password."""
     matcher = crud.authenticate_matcher(supabase, credentials.email, credentials.password)
 
     if not matcher:

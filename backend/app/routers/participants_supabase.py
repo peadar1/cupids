@@ -1,9 +1,7 @@
 """Participants router using Supabase"""
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from supabase import Client
 from typing import List, Dict
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from .. import schemas
 from .. import crud_supabase as crud
 from ..supabase_client import get_supabase_admin
@@ -14,18 +12,13 @@ router = APIRouter(
     tags=["participants"]
 )
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
-
 @router.post("/register", response_model=schemas.ParticipantResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("3/hour")
 def register_participant(
-    request: Request,
     event_id: str,
     participant: schemas.ParticipantRegister,
     supabase: Client = Depends(get_supabase_admin)
 ):
-    """Public endpoint for participant registration. Rate limited to 3 registrations per hour per IP."""
+    """Public endpoint for participant registration (no auth required)."""
     # Verify event exists
     event = crud.get_event_by_id(supabase, event_id)
     if not event:
@@ -34,9 +27,8 @@ def register_participant(
             detail="Event not found"
         )
 
-    # Check if email is already registered for this event
-    existing_participants = crud.get_event_participants(supabase, event_id)
-    if any(p['email'].lower() == participant.email.lower() for p in existing_participants):
+    # Check if email is already registered for this event (efficient count query)
+    if crud.participant_email_exists(supabase, event_id, participant.email):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="This email is already registered for this event"
@@ -70,6 +62,13 @@ def get_participants(
         )
 
     participants = crud.get_event_participants(supabase, event_id)
+
+    # Extract gender and interested_in from form_answers for each participant
+    for p in participants:
+        if p.get('form_answers'):
+            p['gender'] = p['form_answers'].get('gender')
+            p['interested_in'] = p['form_answers'].get('interested_in')
+
     return participants
 
 
@@ -95,6 +94,11 @@ def get_participant(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Participant not found"
         )
+
+    # Extract gender and interested_in from form_answers
+    if participant.get('form_answers'):
+        participant['gender'] = participant['form_answers'].get('gender')
+        participant['interested_in'] = participant['form_answers'].get('interested_in')
 
     return participant
 
